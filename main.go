@@ -5,6 +5,30 @@ import (
 	"net/http"
 )
 
+type apiConfig struct {
+	hits int
+}
+
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.hits++
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.hits)))
+}
+
+func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
+	cfg.hits = 0
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func middlewareCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -27,15 +51,19 @@ func healthHanlder(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("Starting server")
 
+	config := apiConfig{}
+
 	mux := http.NewServeMux()
 	mux.Handle(
 		"/app/",
 		http.StripPrefix(
 			"/app/",
-			http.FileServer(http.Dir(".")),
+			config.middlewareMetricsInc(http.FileServer(http.Dir("."))),
 		),
 	)
 	mux.HandleFunc("/healthz", healthHanlder)
+	mux.HandleFunc("/metrics", config.metricsHandler)
+	mux.HandleFunc("/reset", config.resetHandler)
 
 	corsMux := middlewareCors(mux)
 
