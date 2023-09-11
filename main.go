@@ -22,6 +22,8 @@ func main() {
 	fmt.Println("Starting server")
 
 	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir(".")))
+
 	corsMux := middlewareCors(mux)
 
 	server := http.Server{
