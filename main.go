@@ -63,10 +63,11 @@ func main() {
 	router.Handle("/app/*", fileServerHandler)
 	router.Handle("/app", fileServerHandler)
 	
-	router.Get("/healthz", healthHanlder)
-
-	router.Get("/metrics", config.metricsHandler)
-	router.HandleFunc("/reset", config.resetHandler)
+	apiRouter := chi.NewRouter()
+	apiRouter.Get("/healthz", healthHanlder)
+	apiRouter.Get("/metrics", config.metricsHandler)
+	apiRouter.HandleFunc("/reset", config.resetHandler)
+	router.Mount("/api", apiRouter)
 
 	corsRouter := middlewareCors(router)
 
