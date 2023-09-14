@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 )
@@ -24,62 +25,22 @@ func cleanChirp(chirp string) string {
 	return result
 }
 
+type chirp struct {
+	Chirp string `json:"body"`
+}
 
-func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Chirp *string `json:"body"`
-	}
-
-	type responseValid struct {
-		CleanedBody string `json:"cleaned_body"`
-	}
-
-	type responseError struct {
-		Error string `json:"error"`
-	}
-
-
-	var params parameters
+func decodeChirp(r *http.Request) (string, error) {
+	var c chirp
 	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&params)
+	err := decoder.Decode(&c)
 
-	if err != nil || params.Chirp == nil {
-		response := responseError{Error: "Something went wrong"}
-		dat, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(dat)
-		return
-	}
-
-	if len(*params.Chirp) > 140 {
-		response := responseError{Error: "Chirp is too long"}
-		dat, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(dat)
-		return
-	}
-
-	response := responseValid{CleanedBody: cleanChirp(*params.Chirp)}
-	dat, err := json.Marshal(response)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return "", err
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(dat)
+	if c.Chirp == "" {
+		return "", errors.New("Chirp is empty")
+	}
 
+	return c.Chirp, nil
 }
