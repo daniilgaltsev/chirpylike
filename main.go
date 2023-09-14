@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -61,66 +60,6 @@ func healthHanlder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-
-func validateChirpHandler(w http.ResponseWriter, r *http.Request) {
-	type parameters struct {
-		Chirp *string `json:"body"`
-	}
-
-	type responseValid struct {
-		Valid bool `json:"valid"`
-	}
-
-	type responseError struct {
-		Error string `json:"error"`
-	}
-
-
-	var params parameters
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	err := decoder.Decode(&params)
-
-	if err != nil || params.Chirp == nil {
-		response := responseError{Error: "Something went wrong"}
-		dat, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(dat)
-		return
-	}
-
-	if len(*params.Chirp) > 140 {
-		response := responseError{Error: "Chirp is too long"}
-		dat, err := json.Marshal(response)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(dat)
-		return
-	}
-
-	response := responseValid{Valid: true}
-	dat, err := json.Marshal(response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(dat)
-
-}
 
 func main() {
 	fmt.Println("Starting server")
