@@ -3,6 +3,7 @@
 #
 
 chirpylike
+database.json
 
 # Binaries for programs and plugins
 *.exe

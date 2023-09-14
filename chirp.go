@@ -2,10 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	// "errors"
 	"net/http"
-	// "strings"
-	// "github.com/daniilgaltsev/chirpylike/internal/database"
+
+	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
 
 func chirpsRespondWithInternalError(w http.ResponseWriter) {
@@ -39,24 +38,30 @@ func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
 		CleanedBody string `json:"cleaned_body"`
 	}
 
-	chirp, err := decodeChirp(r)
+	chirpBody, err := decodeChirp(r)
 
 	if err != nil {
 		chirpsRespondWithJsonError(w, "Something went wrong")
 		return
 	}
 
-	if len(chirp) > 140 {
+	if len(chirpBody) > 140 {
 		chirpsRespondWithJsonError(w, "Chirp is too long")
 		return
 	}
 
-	response := responseValid{CleanedBody: cleanChirp(chirp)}
+	response := responseValid{CleanedBody: cleanChirp(chirpBody)}
 	dat, err := json.Marshal(response)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return
 	}
 
+	err = database.SaveChirp(chirpBody)
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+	
 	respondWithJson(w, dat, http.StatusOK)
 }
