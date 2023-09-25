@@ -34,8 +34,9 @@ func chirpsRespondWithJsonError(w http.ResponseWriter, e string) {
 }
 
 func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
-	type responseValid struct {
-		CleanedBody string `json:"cleaned_body"`
+	type responseChirp struct {
+		Id int `json:"id"`
+		Body string `json:"body"`
 	}
 
 	chirpBody, err := decodeChirp(r)
@@ -50,18 +51,24 @@ func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := responseValid{CleanedBody: cleanChirp(chirpBody)}
-	dat, err := json.Marshal(response)
+	chirpBody = cleanChirp(chirpBody)
+
+	chirp, err := database.SaveChirp(chirpBody)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return
 	}
 
-	err = database.SaveChirp(chirpBody)
+	response := responseChirp{
+		Id: chirp.Id,
+		Body: chirp.Body,
+	}
+
+	dat, err := json.Marshal(response)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return
 	}
 	
-	respondWithJson(w, dat, http.StatusOK)
+	respondWithJson(w, dat, http.StatusCreated)
 }
