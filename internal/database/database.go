@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"os"
+	"sync"
 )
 
 type Chirp struct {
@@ -15,6 +16,7 @@ type Database struct {
 }
 
 const dbPath = "./database.json"
+var dbLock = sync.Mutex{}
 
 func loadDB() (Database, error) {
 	var db Database
@@ -57,6 +59,8 @@ func addChirp(chirpBody string, db Database) (Chirp, Database) {
 
 
 func SaveChirp(chirpBody string) (Chirp, error) {
+	dbLock.Lock()
+	defer dbLock.Unlock()
 	db, err := loadDB()
 	if err != nil {
 		return Chirp{}, err
