@@ -4,12 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
 
 func chirpsRespondWithInternalError(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusInternalServerError)
+}
+
+func chirpsRespondWithBadRequestError(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusBadRequest)
+}
+
+func chirpsRespondWithNotFoundError(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
 }
 
 func respondWithJson(w http.ResponseWriter, dat []byte, status int) {
@@ -74,6 +85,7 @@ func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, dat, http.StatusCreated)
 }
 
+
 func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	db, err := database.GetDB()
 
@@ -91,6 +103,36 @@ func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	})
 
 	dat, err := json.Marshal(chirps)
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	respondWithJson(w, dat, http.StatusOK)
+}
+
+func handleChirpsGetId(w http.ResponseWriter, r *http.Request) {
+	db, err := database.GetDB()
+
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	strId := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		chirpsRespondWithBadRequestError(w)
+		return
+	}
+	
+	chirp, ok := db.Chirps[id]
+	if !ok {
+		chirpsRespondWithNotFoundError(w)
+		return
+	}
+
+	dat, err := json.Marshal(chirp)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return
