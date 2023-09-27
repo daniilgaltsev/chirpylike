@@ -1,10 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
 
 type apiConfig struct {
@@ -63,6 +67,18 @@ func healthHanlder(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	fmt.Println("Starting server")
+
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+	
+	if *dbg {
+		err := os.Remove(database.DbPath)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+
 
 	config := apiConfig{}
 

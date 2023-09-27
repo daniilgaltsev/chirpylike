@@ -21,13 +21,13 @@ type Database struct {
 	Users map[int]User `json:"users"`
 }
 
-const dbPath = "./database.json"
+const DbPath = "./database.json"
 var dbLock = sync.Mutex{}
 
 func loadDB() (Database, error) {
 	var db Database
 
-	raw, err := os.ReadFile(dbPath)
+	raw, err := os.ReadFile(DbPath)
 	if os.IsNotExist(err) {
 		db = Database{
 			Chirps: map[int]Chirp{},
@@ -50,7 +50,7 @@ func saveDB(db Database) error {
 		return err
 	}
 
-	err = os.WriteFile(dbPath, raw, 0644)
+	err = os.WriteFile(DbPath, raw, 0644)
 	return err
 }
 
