@@ -23,12 +23,6 @@ func chirpsRespondWithNotFoundError(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
-func respondWithJson(w http.ResponseWriter, dat []byte, status int) {
-	w.WriteHeader(status)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(dat)
-}
-
 
 func chirpsRespondWithJsonError(w http.ResponseWriter, e string) {
 	type responseError struct {
