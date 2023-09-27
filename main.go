@@ -80,6 +80,7 @@ func main() {
 	apiRouter.Post("/chirps", handleChirpsPost)
 	apiRouter.Get("/chirps", handleChirpsGet)
 	apiRouter.Get("/chirps/{id}", handleChirpsGetId)
+	apiRouter.Post("/users", handleUsersPost)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()

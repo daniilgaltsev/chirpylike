@@ -11,8 +11,14 @@ type Chirp struct {
 	Body string `json:"body"`
 }
 
+type User struct {
+	Id int `json:"id"`
+	Email string `json:"email"`
+}
+
 type Database struct {
 	Chirps map[int]Chirp `json:"chirps"`
+	Users map[int]User `json:"users"`
 }
 
 const dbPath = "./database.json"
@@ -25,6 +31,7 @@ func loadDB() (Database, error) {
 	if os.IsNotExist(err) {
 		db = Database{
 			Chirps: map[int]Chirp{},
+			Users: map[int]User{},
 		}
 	} else {
 		err = json.Unmarshal(raw, &db)
@@ -57,6 +64,16 @@ func addChirp(chirpBody string, db Database) (Chirp, Database) {
 	return chirp, db
 }
 
+func addUser(email string, db Database) (User, Database) {
+	id := len(db.Users) + 1
+	user := User{
+		Id: id,
+		Email: email,
+	}
+	db.Users[id] = user
+	return user, db
+}
+
 
 func SaveChirp(chirpBody string) (Chirp, error) {
 	dbLock.Lock()
@@ -70,6 +87,20 @@ func SaveChirp(chirpBody string) (Chirp, error) {
 	err = saveDB(db)
 
 	return chirp, err
+}
+
+func SaveUser(email string) (User, error) {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+	db, err := loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user, db := addUser(email, db)
+	err = saveDB(db)
+
+	return user, err
 }
 
 func GetDB() (Database, error) {
