@@ -71,3 +71,10 @@ func SaveChirp(chirpBody string) (Chirp, error) {
 
 	return chirp, err
 }
+
+func GetDB() (Database, error) {
+	dbLock.Lock()
+	defer dbLock.Unlock()
+
+	return loadDB()
+}

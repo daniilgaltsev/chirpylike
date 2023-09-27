@@ -78,6 +78,7 @@ func main() {
 	apiRouter.Get("/healthz", healthHanlder)
 	apiRouter.HandleFunc("/reset", config.resetHandler)
 	apiRouter.Post("/chirps", handleChirpsPost)
+	apiRouter.Get("/chirps", handleChirpsGet)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
