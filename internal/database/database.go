@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Chirp struct {
@@ -14,6 +16,7 @@ type Chirp struct {
 type User struct {
 	Id int `json:"id"`
 	Email string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Database struct {
@@ -64,11 +67,12 @@ func addChirp(chirpBody string, db Database) (Chirp, Database) {
 	return chirp, db
 }
 
-func addUser(email string, db Database) (User, Database) {
+func addUser(email, password string, db Database) (User, Database) {
 	id := len(db.Users) + 1
 	user := User{
 		Id: id,
 		Email: email,
+		Password: password,
 	}
 	db.Users[id] = user
 	return user, db
@@ -89,7 +93,7 @@ func SaveChirp(chirpBody string) (Chirp, error) {
 	return chirp, err
 }
 
-func SaveUser(email string) (User, error) {
+func SaveUser(email, password string) (User, error) {
 	dbLock.Lock()
 	defer dbLock.Unlock()
 	db, err := loadDB()
@@ -97,7 +101,12 @@ func SaveUser(email string) (User, error) {
 		return User{}, err
 	}
 
-	user, db := addUser(email, db)
+	const cost = 10
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+	if err != nil {
+		return User{}, err
+	}
+	user, db := addUser(email, string(hashedPassword), db)
 	err = saveDB(db)
 
 	return user, err
