@@ -7,12 +7,14 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 
 	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
 
 type apiConfig struct {
 	hits int
+	jwtSecret string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -68,11 +70,23 @@ func healthHanlder(w http.ResponseWriter, r *http.Request) {
 func main() {
 	fmt.Println("Starting server")
 
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+		os.Exit(1)
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		fmt.Println("JWT_SECRET is not set")
+		os.Exit(1)
+	}
+
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 	
 	if *dbg {
-		err := os.Remove(database.DbPath)
+		err = os.Remove(database.DbPath)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -80,7 +94,9 @@ func main() {
 
 
 
-	config := apiConfig{}
+	config := apiConfig{
+		jwtSecret: jwtSecret,
+	}
 
 	router := chi.NewRouter()
 
@@ -111,7 +127,7 @@ func main() {
 		Handler: corsRouter,
 	}
 
-	err := server.ListenAndServe()
+	err = server.ListenAndServe()
 
 	fmt.Println("Server stopped")
 	fmt.Println(err)
