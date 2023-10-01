@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"sync"
 
@@ -109,6 +110,34 @@ func SaveUser(email, password string) (User, error) {
 	user, db := addUser(email, string(hashedPassword), db)
 	err = saveDB(db)
 
+	return user, err
+}
+
+func UpdateUser(id int, email, password string) (User, error) {
+	db, err := GetDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user, ok := db.Users[id]
+	if !ok {
+		return User{}, errors.New("User not found")
+	}
+
+	if email != "" {
+		user.Email = email
+	}
+	if password != "" {
+		const cost = 10 // TODO: need to consolidate password encryption
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+		if err != nil {
+			return User{}, err
+		}
+		user.Password = string(hashedPassword)
+	}
+
+	db.Users[id] = user
+	err = saveDB(db)
 	return user, err
 }
 
