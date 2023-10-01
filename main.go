@@ -47,6 +47,10 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func (cfg *apiConfig) handleLoginPost(w http.ResponseWriter, r *http.Request) {
+	handleLoginPost(w, r, cfg.jwtSecret)
+}
+
 func middlewareCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -113,7 +117,7 @@ func main() {
 	apiRouter.Get("/chirps", handleChirpsGet)
 	apiRouter.Get("/chirps/{id}", handleChirpsGetId)
 	apiRouter.Post("/users", handleUsersPost)
-	apiRouter.Post("/login", handleLoginPost)
+	apiRouter.Post("/login", config.handleLoginPost)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()

@@ -4,8 +4,10 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
@@ -13,6 +15,7 @@ import (
 type user struct {
 	Password string `json:"password"`
 	Email string `json:"email"`
+	Experies int `json:"expries_in_seconds"`
 }
 
 
@@ -55,10 +58,29 @@ func handleUsersPost(w http.ResponseWriter, r *http.Request) {
 	respondWithJson(w, dat, http.StatusCreated)
 }
 
-func handleLoginPost(w http.ResponseWriter, r *http.Request) {
+func createJWT(id, experiesInSeconds int, jwtSecret string) (string, error) {
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		Issuer: "chirpy",
+		IssuedAt: jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(
+			now.Add(time.Duration(experiesInSeconds) * time.Second),
+		),
+		Subject: string(id),
+	}
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	)
+	signedToken, err := token.SignedString([]byte(jwtSecret))
+	return signedToken, err
+}
+
+func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 	type responseUser struct {
 		Id int `json:"id"`
 		Email string `json:"email"`
+		Token string `json:"token"`
 	}
 
 	var u user
@@ -72,6 +94,11 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	if u.Email == "" || u.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
+	}
+
+	experies := 60 * 60 * 24
+	if u.Experies == 0 {
+		u.Experies = experies
 	}
 
 	db, err := database.GetDB()
@@ -103,9 +130,16 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := createJWT(userToAuth.Id, u.Experies, jwtSecret)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	response := responseUser{
 		Id: userToAuth.Id,
 		Email: userToAuth.Email,
+		Token: token,
 	}
 
 	dat, err := json.Marshal(response)
