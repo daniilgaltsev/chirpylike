@@ -99,6 +99,60 @@ func handleChirpsPost(w http.ResponseWriter, r *http.Request, jwtSecret string) 
 }
 
 
+func handleChirpsDeleteId(w http.ResponseWriter, r *http.Request, jwtSecret string) {
+	db, err := database.GetDB()
+
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	strId := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		chirpsRespondWithBadRequestError(w)
+		return
+	}
+	
+	chirp, ok := db.Chirps[id]
+	if !ok {
+		chirpsRespondWithNotFoundError(w)
+		return
+	}
+
+	chirpAuthor := chirp.AuthorId
+
+	_, claims, err := parseAuthorization(r.Header.Get("Authorization"), jwtSecret)
+	if err != nil {
+		chirpsRespondWithBadRequestError(w)
+		return
+	}
+
+	subject, err := claims.GetSubject()
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	userId, err := strconv.Atoi(subject)
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	if userId != chirpAuthor {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	err = database.DeleteChirp(id)
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+}
+
+
 func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	db, err := database.GetDB()
 

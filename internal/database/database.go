@@ -145,6 +145,22 @@ func UpdateUser(id int, email, password string) (User, error) {
 	return user, err
 }
 
+func DeleteChirp(id int) error {
+	db, err := GetDB()
+	if err != nil {
+		return err
+	}
+
+	_, ok := db.Chirps[id]
+	if !ok {
+		return errors.New("Chirp not found")
+	}
+
+	delete(db.Chirps, id)
+	err = saveDB(db)
+	return err
+}
+
 func RevokedTokenExists(token string) (bool, error) {
 	db, err := GetDB()
 	if err != nil {

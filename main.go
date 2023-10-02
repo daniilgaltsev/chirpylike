@@ -51,6 +51,10 @@ func (cfg *apiConfig) handleChirpsPost(w http.ResponseWriter, r *http.Request) {
 	handleChirpsPost(w, r, cfg.jwtSecret)
 }
 
+func (cfg *apiConfig) handleChirpsDeleteId(w http.ResponseWriter, r *http.Request) {
+	handleChirpsDeleteId(w, r, cfg.jwtSecret)
+}
+
 func (cfg *apiConfig) handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	handleLoginPost(w, r, cfg.jwtSecret)
 }
@@ -133,6 +137,7 @@ func main() {
 	apiRouter.Post("/chirps", config.handleChirpsPost)
 	apiRouter.Get("/chirps", handleChirpsGet)
 	apiRouter.Get("/chirps/{id}", handleChirpsGetId)
+	apiRouter.Delete("/chirps/{id}", config.handleChirpsDeleteId)
 	apiRouter.Post("/users", handleUsersPost)
 	apiRouter.Put("/users", config.handleUsersPut)
 	apiRouter.Post("/login", config.handleLoginPost)
