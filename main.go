@@ -55,6 +55,15 @@ func (cfg *apiConfig) handleUsersPut(w http.ResponseWriter, r *http.Request) {
 	handleUsersPut(w, r, cfg.jwtSecret)
 }
 
+func (cfg *apiConfig) handleRefreshPost(w http.ResponseWriter, r *http.Request) {
+	handleRefreshPost(w, r, cfg.jwtSecret)
+}
+
+func (cfg *apiConfig) handleRevokePost(w http.ResponseWriter, r *http.Request) {
+	handleRevokePost(w, r, cfg.jwtSecret)
+}
+
+
 func middlewareCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -123,6 +132,8 @@ func main() {
 	apiRouter.Post("/users", handleUsersPost)
 	apiRouter.Put("/users", config.handleUsersPut)
 	apiRouter.Post("/login", config.handleLoginPost)
+	apiRouter.Post("/refresh", config.handleRefreshPost)
+	apiRouter.Post("/revoke", config.handleRevokePost)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()

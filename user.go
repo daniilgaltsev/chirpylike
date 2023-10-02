@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
-	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
@@ -16,7 +14,6 @@ import (
 type user struct {
 	Password string `json:"password"`
 	Email string `json:"email"`
-	Expires int `json:"expires_in_seconds"`
 }
 
 
@@ -65,23 +62,19 @@ func handleUsersPut(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 		Email string `json:"email"`
 	}
 
-	authorization := r.Header.Get("Authorization")
-	if authorization == "" {
+	_, claims, err := parseAuthorization(r.Header.Get("Authorization"), jwtSecret)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	tokenString := authorization[len("Bearer "):]
-	claims := jwt.RegisteredClaims{}
+	issuer, err := claims.GetIssuer()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		&claims,
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(jwtSecret), nil
-		},
-	)
-	if err != nil || !token.Valid {
+	if issuer != issuerAccess {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -126,29 +119,13 @@ func handleUsersPut(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 	respondWithJson(w, dat, http.StatusOK)
 }
 
-func createJWT(id, expiresInSeconds int, jwtSecret string) (string, error) {
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		Issuer: "chirpy",
-		IssuedAt: jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(
-			now.Add(time.Duration(expiresInSeconds) * time.Second),
-		),
-		Subject: strconv.Itoa(id),
-	}
-	token := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		claims,
-	)
-	signedToken, err := token.SignedString([]byte(jwtSecret))
-	return signedToken, err
-}
 
 func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 	type responseUser struct {
 		Id int `json:"id"`
 		Email string `json:"email"`
 		Token string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 
 	var u user
@@ -162,11 +139,6 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 	if u.Email == "" || u.Password == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
-	}
-
-	expires := 60 * 60 * 24
-	if u.Expires == 0 {
-		u.Expires = expires
 	}
 
 	db, err := database.GetDB()
@@ -198,7 +170,13 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 		return
 	}
 
-	token, err := createJWT(userToAuth.Id, u.Expires, jwtSecret)
+	token, err := createJWT(userToAuth.Id, jwtSecret, false)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, err := createJWT(userToAuth.Id, jwtSecret, true)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -208,6 +186,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 		Id: userToAuth.Id,
 		Email: userToAuth.Email,
 		Token: token,
+		RefreshToken: refreshToken,
 	}
 
 	dat, err := json.Marshal(response)

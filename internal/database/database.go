@@ -23,6 +23,7 @@ type User struct {
 type Database struct {
 	Chirps map[int]Chirp `json:"chirps"`
 	Users map[int]User `json:"users"`
+	RevokedTokens map[string]bool `json:"revokedTokens"`
 }
 
 const DbPath = "./database.json"
@@ -33,9 +34,10 @@ func loadDB() (Database, error) {
 
 	raw, err := os.ReadFile(DbPath)
 	if os.IsNotExist(err) {
-		db = Database{
+		db = Database{ // TODO: don't like that we have to initialize this here, separately from definition
 			Chirps: map[int]Chirp{},
 			Users: map[int]User{},
+			RevokedTokens: map[string]bool{},
 		}
 	} else {
 		err = json.Unmarshal(raw, &db)
@@ -139,6 +141,27 @@ func UpdateUser(id int, email, password string) (User, error) {
 	db.Users[id] = user
 	err = saveDB(db)
 	return user, err
+}
+
+func RevokedTokenExists(token string) (bool, error) {
+	db, err := GetDB()
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := db.RevokedTokens[token]
+	return ok, nil
+}
+
+func AddRevokedToken(token string) error {
+	db, err := GetDB()
+	if err != nil {
+		return err
+	}
+
+	db.RevokedTokens[token] = true
+	err = saveDB(db)
+	return err
 }
 
 func GetDB() (Database, error) {
