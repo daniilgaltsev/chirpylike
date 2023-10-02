@@ -39,11 +39,35 @@ func chirpsRespondWithJsonError(w http.ResponseWriter, e string) {
 	respondWithJson(w, dat, http.StatusBadRequest)
 }
 
-func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
-	type responseChirp struct {
-		Id int `json:"id"`
-		Body string `json:"body"`
+func handleChirpsPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
+	_, claims, err := parseAuthorization(r.Header.Get("Authorization"), jwtSecret)
+	if err != nil {
+		chirpsRespondWithBadRequestError(w)
+		return
 	}
+
+	issuer, err := claims.GetIssuer()
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
+	if issuer != issuerAccess {
+		chirpsRespondWithBadRequestError(w)
+		return
+	}
+
+	subject, err := claims.GetSubject()
+	if err != nil {
+		chirpsRespondWithInternalError(w) // TODO: definitely should fix all the errors to be consistent
+		return
+	}
+	id, err := strconv.Atoi(subject)
+	if err != nil {
+		chirpsRespondWithInternalError(w)
+		return
+	}
+
 
 	chirpBody, err := decodeChirp(r)
 
@@ -59,18 +83,13 @@ func handleChirpsPost(w http.ResponseWriter, r *http.Request) {
 
 	chirpBody = cleanChirp(chirpBody)
 
-	chirp, err := database.SaveChirp(chirpBody)
+	chirp, err := database.SaveChirp(chirpBody, id)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return
 	}
 
-	response := responseChirp{
-		Id: chirp.Id,
-		Body: chirp.Body,
-	}
-
-	dat, err := json.Marshal(response)
+	dat, err := json.Marshal(chirp)
 	if err != nil {
 		chirpsRespondWithInternalError(w)
 		return

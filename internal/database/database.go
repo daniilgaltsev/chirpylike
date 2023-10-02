@@ -12,6 +12,7 @@ import (
 type Chirp struct {
 	Id int `json:"id"`
 	Body string `json:"body"`
+	AuthorId int `json:"author_id"`
 }
 
 type User struct {
@@ -60,11 +61,12 @@ func saveDB(db Database) error {
 	return err
 }
 
-func addChirp(chirpBody string, db Database) (Chirp, Database) {
+func addChirp(chirpBody string, authorId int, db Database) (Chirp, Database) {
 	id := len(db.Chirps) + 1
 	chirp := Chirp{
 		Id: id,
 		Body: chirpBody,
+		AuthorId: authorId,
 	}
 	db.Chirps[id] = chirp
 	return chirp, db
@@ -82,7 +84,7 @@ func addUser(email, password string, db Database) (User, Database) {
 }
 
 
-func SaveChirp(chirpBody string) (Chirp, error) {
+func SaveChirp(chirpBody string, authorId int) (Chirp, error) {
 	dbLock.Lock()
 	defer dbLock.Unlock()
 	db, err := loadDB()
@@ -90,7 +92,7 @@ func SaveChirp(chirpBody string) (Chirp, error) {
 		return Chirp{}, err
 	}
 
-	chirp, db := addChirp(chirpBody, db)
+	chirp, db := addChirp(chirpBody, authorId, db)
 	err = saveDB(db)
 
 	return chirp, err

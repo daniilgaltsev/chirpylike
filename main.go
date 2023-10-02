@@ -47,6 +47,10 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func (cfg *apiConfig) handleChirpsPost(w http.ResponseWriter, r *http.Request) {
+	handleChirpsPost(w, r, cfg.jwtSecret)
+}
+
 func (cfg *apiConfig) handleLoginPost(w http.ResponseWriter, r *http.Request) {
 	handleLoginPost(w, r, cfg.jwtSecret)
 }
@@ -126,7 +130,7 @@ func main() {
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/healthz", healthHanlder)
 	apiRouter.HandleFunc("/reset", config.resetHandler)
-	apiRouter.Post("/chirps", handleChirpsPost)
+	apiRouter.Post("/chirps", config.handleChirpsPost)
 	apiRouter.Get("/chirps", handleChirpsGet)
 	apiRouter.Get("/chirps/{id}", handleChirpsGetId)
 	apiRouter.Post("/users", handleUsersPost)
