@@ -161,9 +161,15 @@ func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authorIdStr := r.URL.Query().Get("author_id")
+	authorId, err := strconv.Atoi(authorIdStr)
+
+
 	chirps := make([]database.Chirp, 0, len(db.Chirps))
 	for _, chirp := range db.Chirps {
-		chirps = append(chirps, chirp)
+		if err != nil || chirp.AuthorId == authorId {
+			chirps = append(chirps, chirp)
+		}
 	}
 	sort.Slice(chirps, func(i, j int) bool {
 		return chirps[i].Id < chirps[j].Id
