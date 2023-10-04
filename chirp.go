@@ -164,6 +164,15 @@ func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	authorIdStr := r.URL.Query().Get("author_id")
 	authorId, err := strconv.Atoi(authorIdStr)
 
+	ascending := true
+	sortStr := r.URL.Query().Get("sort")
+	if sortStr == "desc" {
+		ascending = false
+	} else if sortStr != "asc" {
+		chirpsRespondWithBadRequestError(w)
+		return
+	}
+
 
 	chirps := make([]database.Chirp, 0, len(db.Chirps))
 	for _, chirp := range db.Chirps {
@@ -171,9 +180,15 @@ func handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 			chirps = append(chirps, chirp)
 		}
 	}
-	sort.Slice(chirps, func(i, j int) bool {
-		return chirps[i].Id < chirps[j].Id
-	})
+	if ascending {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].Id < chirps[j].Id
+		})
+	} else {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].Id > chirps[j].Id
+		})
+	}
 
 	dat, err := json.Marshal(chirps)
 	if err != nil {
