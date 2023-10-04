@@ -7,13 +7,37 @@ import (
 	"github.com/daniilgaltsev/chirpylike/internal/database"
 )
 
+func parseAuthorizationPolkaApiKey(authorization, polkaApiKey string) bool {
+	if authorization == "" {
+		return false
+	}
 
-func handlePolkaWebhooksPost(w http.ResponseWriter, r *http.Request) {
+	apiKeyLength := len("ApiKey ")
+	if len(authorization) < apiKeyLength {
+		return false
+	}
+	apiKey := authorization[apiKeyLength:]
+	
+	if apiKey != polkaApiKey {
+		return false
+	}
+
+	return true
+}
+
+
+func handlePolkaWebhooksPost(w http.ResponseWriter, r *http.Request, polkaApiKey string) {
 	type requestBody struct {
 		Event string `json:"event"`
 		Data struct {
 			UserId int `json:"user_id"`
 		}
+	}
+
+	isValid := parseAuthorizationPolkaApiKey(r.Header.Get("Authorization"), polkaApiKey)
+	if !isValid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 
 	var body requestBody

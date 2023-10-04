@@ -15,6 +15,7 @@ import (
 type apiConfig struct {
 	hits int
 	jwtSecret string
+	polkaApiKey string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -71,6 +72,10 @@ func (cfg *apiConfig) handleRevokePost(w http.ResponseWriter, r *http.Request) {
 	handleRevokePost(w, r, cfg.jwtSecret)
 }
 
+func (cfg *apiConfig) handlePolkaWebhooksPost(w http.ResponseWriter, r *http.Request) {
+	handlePolkaWebhooksPost(w, r, cfg.polkaApiKey)
+}
+
 
 func middlewareCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +112,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	polkaApiKey := os.Getenv("POLKA_API_KEY")
+	if polkaApiKey == "" {
+		fmt.Println("POLKA_API_KEY is not set")
+		os.Exit(1)
+	}
+
 	dbg := flag.Bool("debug", false, "Enable debug mode")
 	flag.Parse()
 	
@@ -121,6 +132,7 @@ func main() {
 
 	config := apiConfig{
 		jwtSecret: jwtSecret,
+		polkaApiKey: polkaApiKey,
 	}
 
 	router := chi.NewRouter()
@@ -143,7 +155,7 @@ func main() {
 	apiRouter.Post("/login", config.handleLoginPost)
 	apiRouter.Post("/refresh", config.handleRefreshPost)
 	apiRouter.Post("/revoke", config.handleRevokePost)
-	apiRouter.Post("/polka/webhooks", handlePolkaWebhooksPost)
+	apiRouter.Post("/polka/webhooks", config.handlePolkaWebhooksPost)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
