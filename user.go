@@ -21,6 +21,7 @@ func handleUsersPost(w http.ResponseWriter, r *http.Request) {
 	type responseUser struct {
 		Id int `json:"id"`
 		Email string `json:"email"`
+		IsChirpyRed bool `json:"is_chirpy_red"`
 	}
 
 	var u user
@@ -45,6 +46,7 @@ func handleUsersPost(w http.ResponseWriter, r *http.Request) {
 	response := responseUser{
 		Id: user.Id,
 		Email: user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	}
 
 	dat, err := json.Marshal(response)
@@ -126,6 +128,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 		Email string `json:"email"`
 		Token string `json:"token"`
 		RefreshToken string `json:"refresh_token"`
+		IsChirpyRed bool `json:"is_chirpy_red"`
 	}
 
 	var u user
@@ -187,6 +190,7 @@ func handleLoginPost(w http.ResponseWriter, r *http.Request, jwtSecret string) {
 		Email: userToAuth.Email,
 		Token: token,
 		RefreshToken: refreshToken,
+		IsChirpyRed: userToAuth.IsChirpyRed,
 	}
 
 	dat, err := json.Marshal(response)

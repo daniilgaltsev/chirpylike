@@ -19,6 +19,7 @@ type User struct {
 	Id int `json:"id"`
 	Email string `json:"email"`
 	Password string `json:"password"`
+	IsChirpyRed bool `json:"is_chirpy_red"`
 }
 
 type Database struct {
@@ -115,6 +116,23 @@ func SaveUser(email, password string) (User, error) {
 	err = saveDB(db)
 
 	return user, err
+}
+
+func UpdateUserMembership(id int) error {
+	db, err := GetDB()
+	if err != nil {
+		return err
+	}
+
+	user, ok := db.Users[id]
+	if !ok {
+		return errors.New("User not found")
+	}
+
+	user.IsChirpyRed = true
+	db.Users[id] = user
+	err = saveDB(db)
+	return err
 }
 
 func UpdateUser(id int, email, password string) (User, error) {

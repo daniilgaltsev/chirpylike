@@ -143,6 +143,7 @@ func main() {
 	apiRouter.Post("/login", config.handleLoginPost)
 	apiRouter.Post("/refresh", config.handleRefreshPost)
 	apiRouter.Post("/revoke", config.handleRevokePost)
+	apiRouter.Post("/polka/webhooks", handlePolkaWebhooksPost)
 	router.Mount("/api", apiRouter)
 
 	adminRouter := chi.NewRouter()
